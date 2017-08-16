@@ -35,7 +35,7 @@ class Volunteer(object):
         self.available_slots = []
         self.assigned_slots = []
 
-        #self.sanitize_data()
+        #self.sanitize_data() # Be careful with this function and where it is called!!
 
     def sanitize_data(self):
         if '@' not in self.email:
@@ -50,6 +50,10 @@ class Volunteer(object):
             int(self.total_shifts)
         except:
             print("WARNING: User {} has questionable total shifts: {}".format(self.email, self.total_shifts))
+            if len(self.available_slots) > MAX_SLOTS:
+                self.total_shifts = MAX_SLOTS
+            else:
+                self.total_shifts = len(self.available_slots)
 
         try:
             int(self.first_time)
@@ -108,13 +112,36 @@ with open(fpath, 'rb') as csvfile:
                     slot = Slot(date, start_hr, end_hr)
                     vol.available_slots.append(slot)
 
+
+def sanitize_data(volunteers):
+    emails = []
+    duplicates = []
+    for vol in volunteer_lst:
+        if vol.email in emails:
+            print("WARNING: Possible Duplicate: {} {} ({}). Deleting earlier.".format(vol.first_name,
+                    vol.last_name, vol.email))
+            duplicates.append(vol.email)
+        vol.sanitize_data() #Makes 'first time' field binary and sanitizes offered slots based on available slots
+        emails.append(vol.email)
+
+    if len(duplicates) > 0:
+        duplicate_vols = []
+        for email in duplicates:
+            for vol in volunteer_lst:
+                if vol.email == email:
+                    duplicate_vols.append(vol)
+                    break
+        for dup_vol in duplicate_vols:
+            volunteer_lst.remove(dup_vol)
+sanitize_data(volunteer_lst)
+
 """
 for vol in volunteer_lst:
-    print(vol)
-    vol.sanitize_data()
-    for slot in vol.available_slots:
-        print(slot)
-    print("\n")
+    #print(vol)
+    vol.sanitize_data() #Makes 'first time' field binary and sanitizes offered slots based on available slots
+    #for slot in vol.available_slots:
+    #    print(slot)
+    #print("\n")
 """
 
 #Given start and end days (yyyymmdd) and start and end times (00, 24-hr format), returns a list of needed slots
@@ -243,6 +270,8 @@ for available_slots in [coach_available_slots, train_avilable_slots, coach_avail
             volunteers = grouped_available_slots[amt]
             for volunteer in volunteers:
                 for slot in ordered_slots:
+                    if len(volunteer.assigned_slots) == int(volunteer.total_shifts):
+                        continue
                     slot_id_lst = slot[0].split('-')
                     slot = get_slot(slot_id_lst[0], slot_id_lst[1], slot_id_lst[2], available_slots, slot_id_lst[3])
                     if not slot:
@@ -254,15 +283,17 @@ for available_slots in [coach_available_slots, train_avilable_slots, coach_avail
                         if not match_slot(slot, assigned_slots, ignore_type=False):
                             #slot id available
                             if not day_assigned(volunteer, slot):
-                                if len(volunteer.assigned_slots) < MAX_SLOTS:
-                                    volunteer.assigned_slots.append(slot)
-                                    assigned_slots.append(slot)
+                                volunteer.assigned_slots.append(slot)
+                                assigned_slots.append(slot)
 
 available_slots = coach_available_slots + train_avilable_slots + coach_available_slots2
-print("{} of {} slots filled".format(len(assigned_slots), len(available_slots)))
+print("{} of {} slots filled. {} not filled.".format(len(assigned_slots), len(available_slots),
+                                    len(available_slots) - len(assigned_slots)))
+unassigned = []
 for slot in available_slots:
     if not match_slot(slot, assigned_slots, ignore_type=False):
-        print("Slot {} {} ({}) is unassigned.".format(slot.day, slot.time_period, slot.type))
+        unassigned.append("{} {} ({})".format(slot.day, slot.time_period, slot.type))
+print("Unassigned slots: {}.".format(' ,'.join(unassigned)))
 
 csv_output = "First Name, Surname, Email, Gender, experienced, offered, scheduled,"
 second_line = ",,,,,,,"
@@ -275,8 +306,9 @@ for volunteer in volunteer_lst:
     offered = str(volunteer.total_shifts).replace(',', ' ')
     offered = offered.replace('-', ' to ')
     offered = offered.replace('nan', 'No Response')
+    #print("Volunteer first time: {}".format(volunteer.first_time))
     line = "{},{},{},{},{},{},{},".format(volunteer.first_name, volunteer.last_name,
-        volunteer.email, volunteer.gender, 'Y' if 'no' in str(volunteer.first_time).lower() else 'N',
+        volunteer.email, volunteer.gender, 'Y' if not volunteer.first_time else 'N',
         offered, len(volunteer.assigned_slots))
     for slot in coach_available_slots:
         if match_slot(slot, volunteer.assigned_slots):
