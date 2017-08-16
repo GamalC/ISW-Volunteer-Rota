@@ -302,6 +302,7 @@ assigned_slots = []
 undergrads = [vol for vol in volunteer_lst if vol.undergrad]
 non_undergrads = [vol for vol in volunteer_lst if not vol.undergrad]
 print("There are {} undergrads and {} non-undergrads".format(len(undergrads), len(non_undergrads)))
+constrained_slots = {}
 for available_slots in [coach_available_slots, train_avilable_slots, coach_available_slots2]:
     for available_slot in available_slots:
         ordered_slots = get_ordered_slots(available_slots, volunteer_lst)
@@ -315,8 +316,8 @@ for available_slots in [coach_available_slots, train_avilable_slots, coach_avail
                 volunteers = grouped_available_slots[amt]
                 for volunteer in volunteers:
                     for slot in ordered_slots:
-                        if len(volunteer.assigned_slots) == int(volunteer.total_shifts):
-                            continue
+                        #if len(volunteer.assigned_slots) == int(volunteer.total_shifts):
+                        #    continue
                         slot_id_lst = slot[0].split('-')
                         slot = get_slot(slot_id_lst[0], slot_id_lst[1], slot_id_lst[2], available_slots, slot_id_lst[3])
                         if not slot:
@@ -327,19 +328,50 @@ for available_slots in [coach_available_slots, train_avilable_slots, coach_avail
                             #        slot.day, slot.time_period))
                             if not match_slot(slot, assigned_slots, ignore_type=False):
                                 #slot id available
-                                if not day_assigned(volunteer, slot):
-                                    if experience_match(volunteer, volunteer_lst, slot):
-                                        volunteer.assigned_slots.append(slot)
-                                        assigned_slots.append(slot)
+                                if len(volunteer.assigned_slots) < int(volunteer.total_shifts):
+                                    if not day_assigned(volunteer, slot):
+                                        if experience_match(volunteer, volunteer_lst, slot):
+                                            volunteer.assigned_slots.append(slot)
+                                            assigned_slots.append(slot)
+                                        else:
+                                            if 'experience_match' in constrained_slots:
+                                                if (slot, volunteer) not in constrained_slots['experience_match']:
+                                                    constrained_slots['experience_match'].append((slot, volunteer))
+                                            else:
+                                                constrained_slots['experience_match'] = [(slot, volunteer)]
+                                    else:
+                                        if 'day_assigned' in constrained_slots:
+                                            if (slot, volunteer) not in constrained_slots['day_assigned']:
+                                                constrained_slots['day_assigned'].append((slot, volunteer))
+                                        else:
+                                            constrained_slots['day_assigned'] = [(slot, volunteer)]
+                                else:
+                                    if 'max_slots' in constrained_slots:
+                                        if (slot, volunteer) not in constrained_slots['max_slots']:
+                                            constrained_slots['max_slots'].append((slot, volunteer))
+                                    else:
+                                        constrained_slots['max_slots'] = [(slot, volunteer)]
 
 available_slots = coach_available_slots + train_avilable_slots + coach_available_slots2
 print("{} of {} slots filled. {} not filled.".format(len(assigned_slots), len(available_slots),
                                     len(available_slots) - len(assigned_slots)))
 unassigned = []
+unassigned_info = []
 for slot in available_slots:
     if not match_slot(slot, assigned_slots, ignore_type=False):
         unassigned.append("{} {} ({})".format(slot.day, slot.time_period, slot.type))
-print("Unassigned slots: {}.".format(' ,'.join(unassigned)))
+        unassigned_info.append("\n--------------------------------------------------------------")
+
+        for key, value in constrained_slots.iteritems():
+            for tup in value:
+                if tup[0] == slot:
+                    unassigned_info.append("\n{} {} ({} slots) could be assigned to {} {} {} if not for {} constraint.".format(
+                        tup[1].first_name, tup[1].last_name, int(tup[1].total_shifts) - len(tup[1].assigned_slots),
+                         slot.day, slot.time_period, slot.type, key))
+print("Unassigned slots: {}.".format(', '.join(unassigned)))
+#print("\nUnassigned slots investigate: {}.".format(', '.join(unassigned_info)))
+investigate_fil = open('investigate.txt', 'w')
+investigate_fil.write(' '.join(unassigned_info))
 
 csv_output = "First Name, Surname, Email, Gender, Undergrad, experienced, offered, scheduled,"
 second_line = ",,,,,,,,"
