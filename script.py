@@ -7,6 +7,7 @@ w_a = open(fpath, "r")
 SCHEDULED_YEAR = '2016'
 MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
             'september', 'october', 'november', 'december']
+MAX_SLOTS = 5 #maximum slots to assign to volunteers who did not specify a clear max
 volunteer_init_label = ["First name", "Last name", "Email address", "Gender", "Contact phone number",
  "How many 2-hour shifts would you be able to do in total?", "Is this your first time volunteering at the coach/train station?"]
 
@@ -253,8 +254,9 @@ for available_slots in [coach_available_slots, train_avilable_slots, coach_avail
                         if not match_slot(slot, assigned_slots, ignore_type=False):
                             #slot id available
                             if not day_assigned(volunteer, slot):
-                                volunteer.assigned_slots.append(slot)
-                                assigned_slots.append(slot)
+                                if len(volunteer.assigned_slots) < MAX_SLOTS:
+                                    volunteer.assigned_slots.append(slot)
+                                    assigned_slots.append(slot)
 
 available_slots = coach_available_slots + train_avilable_slots + coach_available_slots2
 print("{} of {} slots filled".format(len(assigned_slots), len(available_slots)))
