@@ -8,7 +8,7 @@ SCHEDULED_YEAR = '2016'
 MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
             'september', 'october', 'november', 'december']
 MAX_SLOTS = 5 #maximum slots to assign to volunteers who did not specify a clear max
-volunteer_init_label = ["First name", "Last name", "Email address", "Gender", "Contact phone number",
+volunteer_init_label = ["First name", "Last name", "Email address", "Gender", "Contact phone number", "Year of study",
  "How many 2-hour shifts would you be able to do in total?", "Is this your first time volunteering at the coach/train station?"]
 
 class Slot(object):
@@ -24,12 +24,13 @@ class Slot(object):
          return "Day: {}. Slot: {}.".format(self.day, self.time_period)
 
 class Volunteer(object):
-    def __init__(self, first_name, last_name, email, gender, contact_no, total_shifts, first_time):
+    def __init__(self, first_name, last_name, email, gender, contact_no, undergrad, total_shifts, first_time):
         self.first_name = first_name
         self.last_name = last_name
         self.email = email
         self.gender = gender
         self.contact_no = contact_no
+        self.undergrad = undergrad
         self.total_shifts = total_shifts
         self.first_time = first_time
         self.available_slots = []
@@ -65,10 +66,18 @@ class Volunteer(object):
             else:
                 print("WARNING: User {} has questionable first time resonse: {}".format(self.email, self.first_time))
 
+        try:
+            int(self.undergrad)
+        except:
+            if 'undergraduate' in str(self.undergrad).lower():
+                self.undergrad = 1
+            else:
+                self.undergrad = 0
+
 
     def __str__(self):
-        return "Name: {} {}. \nEmail: {}\nGender: {} \nPhone number: {}. Total shifts possible: {}. First Time?: {}.".format(self.first_name,
-                self.last_name, self.email, self.gender, self.contact_no, self.total_shifts, "Yes" if self.first_time else "No")
+        return "Name: {} {}. \nEmail: {}\nGender: {} \nPhone number: {}. \nUndergrad: {}. Total shifts possible: {}. First Time?: {}.".format(self.first_name,
+                self.last_name, self.email, self.gender, self.contact_no, "Yes" if self.undergrad else "No", self.total_shifts, "Yes" if self.first_time else "No")
 
 def convert_to_date(string_date):
     parts = string_date.split()
@@ -95,7 +104,7 @@ with open(fpath, 'rb') as csvfile:
         for label in volunteer_init_label:
             init_values.append(volunteers[label][ind])
         vol = Volunteer(init_values[0], init_values[1], init_values[2], init_values[3], init_values[4], init_values[5],
-                  init_values[6])
+                  init_values[6], init_values[7])
         volunteer_lst.append(vol)
         #vol.sanitize_data()
 
@@ -253,6 +262,36 @@ def day_assigned(volunteer, slot):
             return True
     return False
 
+def experience_match(volunteer, volunteers, slot):
+    """
+    Returns true if it OK add the olunteer to this slot as far as experience goes.
+    That is if the other person assigned to the slot is experienced.
+    Only returns false if someone else already assigned to slot and the current volunteer is inexperienced.
+    so seeks to avoid all inexperienced persons at slot.
+    """
+    if not volunteer.first_time:
+        return True
+    elif slot.type != 'coach2':
+        return True #Brittle alert. Uses knowledge of the task: that this only matters currently for persons at coach 2
+    else:
+        #print(volunteers)
+        for volunteer2 in volunteers:
+            #print(volunteer2.assigned_slots)
+            for a_slot in volunteer2.assigned_slots:
+                if a_slot.day == slot.day and a_slot.time_period == slot.time_period:
+                    #This should only match for coach 2 slots with same day and time period
+                    if volunteer2.first_time:
+                        #print("Not matching {} {} and {} {} for slot {} {} {}".format(volunteer.first_name,
+                        #    volunteer.last_name, volunteer2.first_name, volunteer2.last_name,
+                        #    slot.day, slot.time_period, slot.type))
+                        return False
+                    #else:
+                    #    print("OK to match {} {} and {} {} for slot {} {}".format(volunteer.first_name,
+                    #        volunteer.last_name, volunteer2.first_name, volunteer2.last_name,
+                    #        slot.day, slot.time_period))
+
+        return True
+
 
 #Match volunteers to available slots
 coach_available_slots = get_available_slots('20160922', '20161002', '09', '19', 'coach')
@@ -260,31 +299,38 @@ train_avilable_slots = get_available_slots('20160924', '20161001', '09', '19', '
 coach_available_slots2 = get_available_slots('20160922', '20161002', '09', '19', 'coach2')
 
 assigned_slots = []
+undergrads = [vol for vol in volunteer_lst if vol.undergrad]
+non_undergrads = [vol for vol in volunteer_lst if not vol.undergrad]
+print("There are {} undergrads and {} non-undergrads".format(len(undergrads), len(non_undergrads)))
 for available_slots in [coach_available_slots, train_avilable_slots, coach_available_slots2]:
     for available_slot in available_slots:
         ordered_slots = get_ordered_slots(available_slots, volunteer_lst)
-        grouped_available_slots = get_grouped_available_slots(volunteer_lst)
 
-        sorted_grouped_available_slots = sorted(grouped_available_slots.keys())
-        for amt in sorted_grouped_available_slots:
-            volunteers = grouped_available_slots[amt]
-            for volunteer in volunteers:
-                for slot in ordered_slots:
-                    if len(volunteer.assigned_slots) == int(volunteer.total_shifts):
-                        continue
-                    slot_id_lst = slot[0].split('-')
-                    slot = get_slot(slot_id_lst[0], slot_id_lst[1], slot_id_lst[2], available_slots, slot_id_lst[3])
-                    if not slot:
-                        print("Slot '{}' '{}' '{}' '{}' could not be found.".format(slot_id_lst[0],
-                            slot_id_lst[1], slot_id_lst[2], slot_id_lst[3]))
-                    if slot and match_slot(slot, volunteer.available_slots):
-                        #print("{} {} matches slot {} {}".format(volunteer.first_name, volunteer.last_name,
-                        #        slot.day, slot.time_period))
-                        if not match_slot(slot, assigned_slots, ignore_type=False):
-                            #slot id available
-                            if not day_assigned(volunteer, slot):
-                                volunteer.assigned_slots.append(slot)
-                                assigned_slots.append(slot)
+        #grouped_available_slots = get_grouped_available_slots(volunteer_lst)
+        for v_lst in [undergrads, non_undergrads]:
+            grouped_available_slots = get_grouped_available_slots(v_lst)
+            sorted_grouped_available_slots = sorted(grouped_available_slots.keys())
+
+            for amt in sorted_grouped_available_slots:
+                volunteers = grouped_available_slots[amt]
+                for volunteer in volunteers:
+                    for slot in ordered_slots:
+                        if len(volunteer.assigned_slots) == int(volunteer.total_shifts):
+                            continue
+                        slot_id_lst = slot[0].split('-')
+                        slot = get_slot(slot_id_lst[0], slot_id_lst[1], slot_id_lst[2], available_slots, slot_id_lst[3])
+                        if not slot:
+                            print("Slot '{}' '{}' '{}' '{}' could not be found.".format(slot_id_lst[0],
+                                slot_id_lst[1], slot_id_lst[2], slot_id_lst[3]))
+                        if slot and match_slot(slot, volunteer.available_slots):
+                            #print("{} {} matches slot {} {}".format(volunteer.first_name, volunteer.last_name,
+                            #        slot.day, slot.time_period))
+                            if not match_slot(slot, assigned_slots, ignore_type=False):
+                                #slot id available
+                                if not day_assigned(volunteer, slot):
+                                    if experience_match(volunteer, volunteer_lst, slot):
+                                        volunteer.assigned_slots.append(slot)
+                                        assigned_slots.append(slot)
 
 available_slots = coach_available_slots + train_avilable_slots + coach_available_slots2
 print("{} of {} slots filled. {} not filled.".format(len(assigned_slots), len(available_slots),
@@ -295,8 +341,8 @@ for slot in available_slots:
         unassigned.append("{} {} ({})".format(slot.day, slot.time_period, slot.type))
 print("Unassigned slots: {}.".format(' ,'.join(unassigned)))
 
-csv_output = "First Name, Surname, Email, Gender, experienced, offered, scheduled,"
-second_line = ",,,,,,,"
+csv_output = "First Name, Surname, Email, Gender, Undergrad, experienced, offered, scheduled,"
+second_line = ",,,,,,,,"
 for slot in coach_available_slots:
      csv_output += "{},".format(slot.day)
      second_line += "{},".format(slot.time_period)
@@ -307,9 +353,9 @@ for volunteer in volunteer_lst:
     offered = offered.replace('-', ' to ')
     offered = offered.replace('nan', 'No Response')
     #print("Volunteer first time: {}".format(volunteer.first_time))
-    line = "{},{},{},{},{},{},{},".format(volunteer.first_name, volunteer.last_name,
-        volunteer.email, volunteer.gender, 'Y' if not volunteer.first_time else 'N',
-        offered, len(volunteer.assigned_slots))
+    line = "{},{},{},{},{},{},{},{},".format(volunteer.first_name, volunteer.last_name,
+        volunteer.email, volunteer.gender, 'Y' if volunteer.undergrad else 'N',
+         'Y' if not volunteer.first_time else 'N', offered, len(volunteer.assigned_slots))
     for slot in coach_available_slots:
         if match_slot(slot, volunteer.assigned_slots):
             for a_slot in volunteer.assigned_slots:
