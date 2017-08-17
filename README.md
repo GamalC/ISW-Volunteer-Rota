@@ -24,6 +24,11 @@ This code seeks to automate the process.
 + Time affinity (giving persons same times each day as much as possible)
 + Ensure no schedule clashes with ISW events.
 
+**Dependencies**
++ Python 2.7
++ Pandas
+
 **Usage**
 
 $ **python** script.py --input-file "Volunteer_Sign-Up_.csv" --coach-start-day 20160922 --coach-end-day 20161002 --coach-start-hour 9 --coach-end-hour 19 --train-start-day 20160924 --train-end-day 20161001 --train-start-hour 9 --train-end-hour 19  --slot-length 2 --max-slots 5
+
