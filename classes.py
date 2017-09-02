@@ -27,7 +27,8 @@ class Volunteer(object):
 
         #self.sanitize_data() # Be careful with this function and where it is called!!
 
-    def sanitize_data(self):
+    def sanitize_data(self, max_slots):
+        #print(self.email)
         if '@' not in self.email:
             print("WARNING: User {} has incorrect email: {}".format(self.email, self.email))
 
@@ -40,9 +41,11 @@ class Volunteer(object):
             int(self.total_shifts)
         except:
             print("WARNING: User {} has questionable total shifts: {}".format(self.email, self.total_shifts))
-            if len(self.available_slots) > MAX_SLOTS:
-                self.total_shifts = MAX_SLOTS
+            if len(self.available_slots) > max_slots:
+                self.total_shifts = max_slots
             else:
+                #print("{} has {} available slots: {}".format(self.email, len(self.available_slots),
+                #    ["{} {}".format(slot.day, slot.time_period) for slot in self.available_slots]))
                 self.total_shifts = len(self.available_slots)
 
         try:
