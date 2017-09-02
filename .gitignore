@@ -1,0 +1,13 @@
+*.pyc
+*.log
+*.tsv
+*.csv
+*.xlsx
+*.txt
+*~
+*.pdf
+*.blg
+*.aux
+*.synctex.gz
+*.dvi
+logs/
