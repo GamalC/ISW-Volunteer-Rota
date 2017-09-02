@@ -5,8 +5,9 @@ import pandas as pd
 from utilities import *
 from classes import *
 
-volunteer_init_label = ["First name", "Last name", "Email address", "Gender", "Contact phone number", "Year of study",
- "How many 2-hour shifts would you be able to do in total?", "Is this your first time volunteering at the coach/train station?"]
+volunteer_init_label = ["First name", "Last name", "Email address",
+"Contact phone number", "Academic Category", "How many 2-hour shifts would you be able to do in total?",
+"Is this your first time volunteering at the coach/train station?"]
 
 def argparser():
     import argparse
@@ -45,7 +46,7 @@ def do_rota(input_file, year, coach_start_day, coach_end_day, coach_start_hour,
             for label in volunteer_init_label:
                 init_values.append(volunteers[label][ind])
             vol = Volunteer(init_values[0], init_values[1], init_values[2], init_values[3], init_values[4], init_values[5],
-                      init_values[6], init_values[7])
+                      init_values[6])
             volunteer_lst.append(vol)
 
             signups[email] = {}
