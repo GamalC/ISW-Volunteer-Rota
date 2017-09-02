@@ -53,7 +53,7 @@ def do_rota(input_file, year, coach_start_day, coach_end_day, coach_start_hour,
                 if str(volunteers[s_key][ind]) != 'nan':
                     signups[email][s_key] = volunteers[s_key][ind]
                     for time_period in volunteers[s_key][ind].split(','):
-                        date = convert_to_date(s_key)
+                        date = convert_to_date(s_key, year)
                         start_time = time_period.split('-')[0]
                         end_time = time_period.split('-')[1]
                         start_hr = start_time.split(':')[0].strip()
@@ -61,7 +61,7 @@ def do_rota(input_file, year, coach_start_day, coach_end_day, coach_start_hour,
                         slot = Slot(date, start_hr, end_hr)
                         vol.available_slots.append(slot)
 
-    sanitize_data(volunteer_lst)
+    sanitize_data(volunteer_lst, max_slots)
 
     #Match volunteers to available slots
     #coach_available_slots = get_available_slots('20160922', '20161002', '09', '19', 'coach')
