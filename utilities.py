@@ -177,8 +177,8 @@ def experience_match(volunteer, volunteers, slot):
         return True
 
 def output_rota(coach_available_slots, volunteer_lst):
-    csv_output = "First Name, Surname, Email, Gender, Undergrad, experienced, offered, scheduled,"
-    second_line = ",,,,,,,,"
+    csv_output = "First Name, Surname, Email, Undergrad, experienced, offered, scheduled,"
+    second_line = ",,,,,,,"
     for slot in coach_available_slots:
          csv_output += "{},".format(slot.day)
          second_line += "{},".format(slot.time_period)
@@ -189,8 +189,8 @@ def output_rota(coach_available_slots, volunteer_lst):
         offered = offered.replace('-', ' to ')
         offered = offered.replace('nan', 'No Response')
         #print("Volunteer first time: {}".format(volunteer.first_time))
-        line = "{},{},{},{},{},{},{},{},".format(volunteer.first_name, volunteer.last_name,
-            volunteer.email, volunteer.gender, 'Y' if volunteer.undergrad else 'N',
+        line = "{},{},{},{},{},{},{},".format(volunteer.first_name, volunteer.last_name,
+            volunteer.email, 'Y' if volunteer.undergrad else 'N',
              'Y' if not volunteer.first_time else 'N', offered, len(volunteer.assigned_slots))
         for slot in coach_available_slots:
             if match_slot(slot, volunteer.assigned_slots):
