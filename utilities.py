@@ -1,11 +1,11 @@
 from classes import *
 
-SCHEDULED_YEAR = '2016'
+#SCHEDULED_YEAR = '2015'
 MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
             'september', 'october', 'november', 'december']
-MAX_SLOTS = 5 #maximum slots to assign to volunteers who did not specify a clear max
+#MAX_SLOTS = 5 #maximum slots to assign to volunteers who did not specify a clear max
 
-def convert_to_date(string_date):
+def convert_to_date(string_date, scheduled_year):
     parts = string_date.split()
     day = parts[1]
     month = parts[2].lower()
@@ -15,11 +15,11 @@ def convert_to_date(string_date):
     #print("converted {} to {}".format(string_date, "{}{}{}".format(SCHEDULED_YEAR,
     #        month if len(str(month)) == 2 else "0{}".format(month),
     #        day if len(str(day)) == 2 else "0{}".format(day))))
-    return "{}{}{}".format(SCHEDULED_YEAR,
+    return "{}{}{}".format(scheduled_year,
             month if len(str(month)) == 2 else "0{}".format(month),
             day if len(str(day)) == 2 else "0{}".format(day))
 
-def sanitize_data(volunteer_lst):
+def sanitize_data(volunteer_lst, max_slots):
     emails = []
     duplicates = []
     for vol in volunteer_lst:
@@ -27,7 +27,7 @@ def sanitize_data(volunteer_lst):
             print("WARNING: Possible Duplicate: {} {} ({}). Deleting earlier.".format(vol.first_name,
                     vol.last_name, vol.email))
             duplicates.append(vol.email)
-        vol.sanitize_data() #Makes 'first time' field binary and sanitizes offered slots based on available slots
+        vol.sanitize_data(max_slots) #Makes 'first time' field binary and sanitizes offered slots based on available slots
         emails.append(vol.email)
 
     if len(duplicates) > 0:
