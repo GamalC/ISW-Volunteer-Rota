@@ -13,11 +13,10 @@ class Slot(object):
          return "Day: {}. Slot: {}.".format(self.day, self.time_period)
 
 class Volunteer(object):
-    def __init__(self, first_name, last_name, email, gender, contact_no, undergrad, total_shifts, first_time):
+    def __init__(self, first_name, last_name, email, contact_no, undergrad, total_shifts, first_time):
         self.first_name = first_name
         self.last_name = last_name
         self.email = email
-        self.gender = gender
         self.contact_no = contact_no
         self.undergrad = undergrad
         self.total_shifts = total_shifts
@@ -41,7 +40,10 @@ class Volunteer(object):
             int(self.total_shifts)
         except:
             print("WARNING: User {} has questionable total shifts: {}".format(self.email, self.total_shifts))
-            if len(self.available_slots) > max_slots:
+            #print("available slots: {}".format(len(self.available_slots)))
+            if str(self.total_shifts).lower() == 'unlimited!':
+                self.total_shifts = len(self.available_slots)
+            elif len(self.available_slots) > max_slots:
                 self.total_shifts = max_slots
             else:
                 #print("{} has {} available slots: {}".format(self.email, len(self.available_slots),
@@ -68,5 +70,5 @@ class Volunteer(object):
 
 
     def __str__(self):
-        return "Name: {} {}. \nEmail: {}\nGender: {} \nPhone number: {}. \nUndergrad: {}. Total shifts possible: {}. First Time?: {}.".format(self.first_name,
-                self.last_name, self.email, self.gender, self.contact_no, "Yes" if self.undergrad else "No", self.total_shifts, "Yes" if self.first_time else "No")
+        return "Name: {} {}. \nEmail: {}. \nPhone number: {}. \nUndergrad: {}. Total shifts possible: {}. First Time?: {}.".format(self.first_name,
+                self.last_name, self.email, self.contact_no, "Yes" if self.undergrad else "No", self.total_shifts, "Yes" if self.first_time else "No")
