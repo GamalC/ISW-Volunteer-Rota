@@ -247,3 +247,13 @@ def output_simplified_rota(coach_available_slots, volunteer_lst):
     simplified_csv_file = open('simplified_rota.csv', 'w')
     simplified_csv_file.write(simplified_output)
     simplified_csv_file.close()
+
+def output_preassigned_file(volunteer_lst):
+    output = ""
+    for volunteer in volunteer_lst:
+        for assigned_slot in volunteer.assigned_slots:
+            output += "{},{},{},{},{}\n".format(volunteer.email, assigned_slot.day,
+                assigned_slot.start_hr, assigned_slot.end_hr, assigned_slot.type)
+    preassigned_file = open('last_assigned_slots.csv', 'w')
+    preassigned_file.write(output)
+    preassigned_file.close()
