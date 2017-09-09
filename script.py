@@ -25,13 +25,14 @@ def argparser():
     ap.add_argument('-teh', '--train-end-hour', help='Hour to end at train station (24 hr format). Example: 19')
     ap.add_argument('-l', '--slot-length', default=2, help='Amount of hours of each slot (default 2)')
     ap.add_argument('-ms', '--max-slots', default=5, help='Maximum amount of slots to give to persons who do not specify (default 5)')
+    ap.add_argument('-asf', '--assigned-slots-file', default=None, help='File to read pre-assigned slots from. (default None)')
 
     return ap
 
 #fpath = "Volunteer Sign-Up ISW 2016 [Form] (Responses).csv"
 def do_rota(input_file, year, coach_start_day, coach_end_day, coach_start_hour,
     coach_end_hour, train_start_day, train_end_day, train_start_hour, train_end_hour,
-    slot_length, max_slots):
+    slot_length, max_slots, assigned_slots_file):
 
     MAX_SLOTS = max_slots #maximum slots to assign to volunteers who did not specify a clear max
 
@@ -76,6 +77,36 @@ def do_rota(input_file, year, coach_start_day, coach_end_day, coach_start_hour,
     undergrads = [vol for vol in volunteer_lst if vol.undergrad]
     non_undergrads = [vol for vol in volunteer_lst if not vol.undergrad]
     print("There are {} undergrads and {} non-undergrads".format(len(undergrads), len(non_undergrads)))
+
+    #Read already assigned slots from file if provided
+    if assigned_slots_file:
+        asf = open(assigned_slots_file, 'r')
+        with open(assigned_slots_file, 'r') as asffile:
+            asf = csv.reader(asffile, delimiter=',')
+            for line in asf:
+                if len(line) == 5:
+                    vol_email = line[0]
+                    slot_day = line[1]
+                    slot_start_hr = line[2]
+                    slot_end_hr = line[3]
+                    slot_type = line[4]
+                    focus_vol = None
+                    #find volunteer
+                    for vol in volunteer_lst:
+                        if vol.email == vol_email:
+                            focus_vol = vol
+                            break
+                    #find slot
+                    avail_slots = coach_available_slots + train_avilable_slots + coach_available_slots2
+                    focus_slot = get_slot(slot_day, slot_start_hr, slot_end_hr, avail_slots, slot_type)
+                    if focus_slot and focus_vol:
+                        print("Pre-assigning {} to {}-{}-{}".format(focus_vol.email, focus_slot.day,
+                                focus_slot.time_period,focus_slot.type))
+                        focus_vol.assigned_slots.append(focus_slot)
+                        assigned_slots.append(focus_slot)
+                else:
+                    print("Assigned slots file had invalid amount of values: {}".format(len(line)))
+
     constrained_slots = {}
     for available_slots in [coach_available_slots, train_avilable_slots, coach_available_slots2]:
         for available_slot in available_slots:
@@ -151,12 +182,13 @@ def do_rota(input_file, year, coach_start_day, coach_end_day, coach_start_hour,
     #Output rota files
     output_rota(coach_available_slots, volunteer_lst)
     output_simplified_rota(coach_available_slots, volunteer_lst)
+    output_preassigned_file(volunteer_lst) #File to become preassigned file for next use if neccessary
 
 def main(argv):
     args = argparser().parse_args(argv[1:])
     do_rota(args.input_file, args.year, args.coach_start_day, args.coach_end_day, args.coach_start_hour,
         args.coach_end_hour, args.train_start_day, args.train_end_day, args.train_start_hour,
-        args.train_end_hour, int(args.slot_length), int(args.max_slots))
+        args.train_end_hour, int(args.slot_length), int(args.max_slots), args.assigned_slots_file)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
