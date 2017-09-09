@@ -32,3 +32,11 @@ This code seeks to automate the process.
 
 $ **python** script.py --input-file "Volunteer_Sign-Up_.csv" --coach-start-day 20160922 --coach-end-day 20161002 --coach-start-hour 9 --coach-end-hour 19 --train-start-day 20160924 --train-end-day 20161001 --train-start-hour 9 --train-end-hour 19  --slot-length 2 --max-slots 5
 
+
+It is also possible to pre-assign slots to particular users so that the script skips them on execution. Lines of files specifying this information need to be of form: <volunteer email>,<slot day>,<slot start hour>,<slot end hour>,<slot type>.
+  
+*Use Case:* After assigning volunteers to rota, persons may sign up after or persons may become unavailable, so the script needs to be re-run but with no disruption to the slots of other assigned volunteers. The information of unaffected assignments can be passed in this way. The script also now outputs the rota in a file of this format for use in future runs if needed as 'last_assigned_slots.csv'.
+  
+**Usage**
+
+$ **python** script.py --input-file "volunteers_2017_master.csv" --coach-start-day 20170920 --coach-end-day 20171001 --coach-start-hour 9 --coach-end-hour 21 --train-start-day 20170923 --train-end-day 20171001 --train-start-hour 11 --train-end-hour 21 --slot-length 2 --max-slots 5 --year 2017 **--assigned-slots-file "assigned_slots.csv"**
